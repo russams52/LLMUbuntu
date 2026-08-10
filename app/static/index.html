@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LLMUbuntu</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --border: #30363d;
+        --accent: #2f81f7;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --user: #1f6feb;
+        --assistant: #21262d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      header {
+        width: 100%;
+        max-width: 760px;
+        padding: 24px 16px 8px;
+      }
+      header h1 { margin: 0; font-size: 22px; }
+      header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+      main {
+        width: 100%;
+        max-width: 760px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 8px 16px 16px;
+        min-height: 0;
+      }
+      #log {
+        flex: 1;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .msg { display: flex; }
+      .msg.user { justify-content: flex-end; }
+      .bubble {
+        max-width: 78%;
+        padding: 10px 14px;
+        border-radius: 14px;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .msg.user .bubble { background: var(--user); color: white; border-bottom-right-radius: 4px; }
+      .msg.assistant .bubble { background: var(--assistant); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+      .empty { color: var(--muted); text-align: center; margin: auto; }
+      form { display: flex; gap: 8px; margin-top: 12px; }
+      input[type="text"] {
+        flex: 1;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        color: var(--text);
+        font-size: 15px;
+      }
+      input[type="text"]:focus { outline: none; border-color: var(--accent); }
+      button {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 10px;
+        background: var(--accent);
+        color: white;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.5; cursor: default; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>LLMUbuntu</h1>
+      <p>A minimal chat scaffold. Try <code>help</code>, <code>reverse hello</code>, or <code>count one two three</code>.</p>
+    </header>
+    <main>
+      <div id="log"><div class="empty">No messages yet. Say hello!</div></div>
+      <form id="form">
+        <input id="input" type="text" placeholder="Type a message…" autocomplete="off" />
+        <button id="send" type="submit">Send</button>
+      </form>
+    </main>
+    <script>
+      const log = document.getElementById("log");
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const send = document.getElementById("send");
+      let hasMessages = false;
+
+      function addBubble(role, content) {
+        if (!hasMessages) {
+          log.innerHTML = "";
+          hasMessages = true;
+        }
+        const msg = document.createElement("div");
+        msg.className = "msg " + role;
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = content;
+        msg.appendChild(bubble);
+        log.appendChild(msg);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        addBubble("user", text);
+        input.value = "";
+        send.disabled = true;
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: text }),
+          });
+          if (!res.ok) throw new Error("Request failed: " + res.status);
+          const data = await res.json();
+          addBubble("assistant", data.assistant.content);
+        } catch (err) {
+          addBubble("assistant", "Error: " + err.message);
+        } finally {
+          send.disabled = false;
+          input.focus();
+        }
+      });
+    </script>
+  </body>
+</html>
