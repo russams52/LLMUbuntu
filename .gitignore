@@ -1,0 +1,11 @@
+node_modules/
+server/node_modules/
+server/dist/
+server/uploads/
+server/data/
+.env
+.DS_Store
+DerivedData/
+xcuserdata/
+*.xcodeproj/
+*.xcworkspace/
