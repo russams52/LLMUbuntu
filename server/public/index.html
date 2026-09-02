@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hazard Reporter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="brand-block">
+      <p class="brand">Hazard Reporter</p>
+      <h1>Report a public hazard</h1>
+      <p class="lede">Photograph a hanging wire, pothole, or other danger. We route it to the right town, utility, or state outside-plant desk.</p>
+    </header>
+
+    <section class="composer" aria-label="New report">
+      <form id="report-form">
+        <label class="field">
+          <span>Hazard type</span>
+          <select id="hazardType" name="hazardType" required>
+            <option value="wire">Hanging / damaged wire</option>
+            <option value="pothole">Pothole</option>
+            <option value="road_issue">Other road issue</option>
+            <option value="other">Other public hazard</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Description</span>
+          <textarea id="description" name="description" rows="3" placeholder="What did you see?"></textarea>
+        </label>
+
+        <div class="coords">
+          <label class="field">
+            <span>Latitude</span>
+            <input id="latitude" name="latitude" type="number" step="any" value="40.7062" required />
+          </label>
+          <label class="field">
+            <span>Longitude</span>
+            <input id="longitude" name="longitude" type="number" step="any" value="-73.6187" required />
+          </label>
+        </div>
+
+        <div class="presets" role="group" aria-label="Sample locations">
+          <button type="button" data-lat="40.7062" data-lng="-73.6187">Hempstead, LI</button>
+          <button type="button" data-lat="40.92" data-lng="-72.85">Brookhaven, LI</button>
+          <button type="button" data-lat="34.0522" data-lng="-118.2437">Los Angeles, CA</button>
+        </div>
+
+        <label class="field photo-field">
+          <span>Photo</span>
+          <input id="photo" name="photo" type="file" accept="image/*" capture="environment" />
+        </label>
+
+        <div class="actions">
+          <button type="button" id="preview-btn" class="secondary">Preview routing</button>
+          <button type="submit" class="primary">Submit report</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="result" id="result" hidden>
+      <h2>Routing result</h2>
+      <div id="result-body"></div>
+    </section>
+
+    <section class="recent">
+      <h2>Recent reports</h2>
+      <div id="recent-list">Loading…</div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
