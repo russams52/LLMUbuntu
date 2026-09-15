@@ -3,17 +3,22 @@ import PhotosUI
 
 struct ContentView: View {
     @EnvironmentObject private var locationService: LocationService
+    @ObservedObject private var pendingReport = PendingWireReportStore.shared
+
     @State private var hazardType: HazardType = .wire
     @State private var descriptionText = ""
     @State private var selectedItem: PhotosPickerItem?
     @State private var imageData: Data?
     @State private var previewImage: UIImage?
     @State private var isSubmitting = false
+    @State private var isClassifying = false
+    @State private var visualPrediction: WireVisualPrediction?
     @State private var result: ReportResponse?
     @State private var errorText: String?
     @State private var showCamera = false
 
     private let api = APIClient()
+    private let visualIntelligence = WireVisualIntelligenceService.shared
 
     var body: some View {
         NavigationStack {
@@ -50,6 +55,7 @@ struct ContentView: View {
                 CameraPicker { image in
                     previewImage = image
                     imageData = image.jpegData(compressionQuality: 0.85)
+                    Task { await classifyCurrentImage() }
                 }
             }
             .onChange(of: selectedItem) { _, item in
@@ -57,8 +63,12 @@ struct ContentView: View {
                     if let data = try? await item?.loadTransferable(type: Data.self) {
                         imageData = data
                         previewImage = UIImage(data: data)
+                        await classifyCurrentImage()
                     }
                 }
+            }
+            .onChange(of: pendingReport.consumeToken) { _, _ in
+                applyPendingVisualReport()
             }
         }
     }
@@ -68,7 +78,7 @@ struct ContentView: View {
             Text("Hazard Reporter")
                 .font(.custom("Georgia", size: 36).weight(.bold))
                 .foregroundStyle(Color(red: 0.04, green: 0.28, blue: 0.20))
-            Text("Photograph a public hazard. We notify the right town, utility, or state outside-plant desk.")
+            Text("Photograph a public hazard. On-device visual intelligence flags non-standard outside wires and routes the report to the right desk.")
                 .font(.system(size: 16))
                 .foregroundStyle(Color(red: 0.30, green: 0.36, blue: 0.33))
                 .fixedSize(horizontal: false, vertical: true)
@@ -99,6 +109,17 @@ struct ContentView: View {
                     .frame(height: 220)
                     .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            }
+
+            if isClassifying {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Scanning for non-standard outside wires…")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            } else if let visualPrediction {
+                visualResultBanner(visualPrediction)
             }
 
             HStack(spacing: 12) {
@@ -135,6 +156,27 @@ struct ContentView: View {
         }
         .padding(18)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+    }
+
+    private func visualResultBanner(_ prediction: WireVisualPrediction) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(prediction.label.title)
+                .font(.headline)
+            Text("\(prediction.confidencePercent)% confidence · \(prediction.label.detail)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if prediction.label.isReportableWireHazard {
+                Text("Hazard type set to hanging / damaged wire.")
+                    .font(.caption)
+                    .foregroundStyle(Color(red: 0.06, green: 0.42, blue: 0.30))
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(red: 0.06, green: 0.42, blue: 0.30).opacity(0.10))
+        )
     }
 
     private var locationRow: some View {
@@ -198,6 +240,39 @@ struct ContentView: View {
         [location.locality, location.county, location.state]
             .compactMap { $0 }
             .joined(separator: " · ")
+    }
+
+    private func applyPendingVisualReport() {
+        hazardType = pendingReport.hazardType
+        if !pendingReport.descriptionText.isEmpty {
+            descriptionText = pendingReport.descriptionText
+        }
+        if let image = pendingReport.previewImage {
+            previewImage = image
+            imageData = pendingReport.imageData
+        }
+        visualPrediction = pendingReport.prediction
+    }
+
+    private func classifyCurrentImage() async {
+        guard let previewImage else { return }
+        isClassifying = true
+        defer { isClassifying = false }
+
+        guard visualIntelligence.isModelAvailable else {
+            visualPrediction = nil
+            return
+        }
+
+        let prediction = await visualIntelligence.classify(image: previewImage)
+        visualPrediction = prediction
+        if let prediction, prediction.label.isReportableWireHazard, prediction.confidence >= 0.55 {
+            hazardType = .wire
+            if descriptionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                descriptionText =
+                    "On-device visual intelligence detected a non-standard outside wire (\(prediction.confidencePercent)% confidence)."
+            }
+        }
     }
 
     private func submit() async {

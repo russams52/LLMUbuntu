@@ -1,0 +1,31 @@
+{
+  "best_val_accuracy": 1.0,
+  "epochs": 6,
+  "classes": [
+    "non_standard_outside_wire",
+    "standard_outside_wire",
+    "no_outside_wire"
+  ],
+  "elapsed_sec": 9.83,
+  "sample_prediction": {
+    "top": {
+      "label": "non_standard_outside_wire",
+      "confidence": 0.9999538660049438
+    },
+    "all": [
+      {
+        "label": "non_standard_outside_wire",
+        "confidence": 0.9999538660049438
+      },
+      {
+        "label": "standard_outside_wire",
+        "confidence": 4.609805910149589e-05
+      },
+      {
+        "label": "no_outside_wire",
+        "confidence": 3.393734004930593e-08
+      }
+    ]
+  },
+  "model_path": "/workspace/ml/wire-visual-intelligence/models/NonStandardOutsideWireClassifier.mlpackage"
+}
