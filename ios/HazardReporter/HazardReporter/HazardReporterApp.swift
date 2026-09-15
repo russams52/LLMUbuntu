@@ -1,7 +1,8 @@
 //
 // HazardReporter — iOS client for public hazard reporting.
 // Open this folder in Xcode (File → Open) or create a new iOS App
-// target and add these sources. Requires iOS 17+, camera & location usage.
+// target and add these sources. Requires iOS 18+, camera & location usage.
+// Visual Intelligence integration requires the iOS 26+ SDK (compile-time canImport).
 //
 
 import SwiftUI

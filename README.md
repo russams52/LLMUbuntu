@@ -19,7 +19,26 @@ Authority coverage is **US-wide in the API**, with **Long Island / New York seed
 | Path | Purpose |
 |------|---------|
 | `server/` | Node.js + TypeScript API, SQLite, routing engine, demo web UI |
-| `ios/HazardReporter/` | SwiftUI iOS client (camera, location, multipart upload) |
+| `ios/HazardReporter/` | SwiftUI iOS client (camera, location, multipart upload, on-device wire VI) |
+| `ml/wire-visual-intelligence/` | Train Core ML to recognize non-standard outside wires for Visual Intelligence |
+
+## Visual Intelligence (non-standard outside wires)
+
+The iOS app ships `NonStandardOutsideWireClassifier.mlpackage` and runs it with Vision whenever a photo is captured. Non-standard outside wires auto-select hazard type **Hanging / damaged wire**.
+
+On iOS 26+ (Xcode with Visual Intelligence SDK), App Intents expose the same classifier to system Visual Intelligence so Camera / screenshot search can surface Hazard Reporter results.
+
+Retrain (bootstrap synthetic set or your own photos):
+
+```bash
+cd ml/wire-visual-intelligence
+python3 scripts/generate_synthetic_dataset.py
+python3 scripts/train_coreml.py
+python3 scripts/evaluate_model.py
+# then copy models/NonStandardOutsideWireClassifier.mlpackage → ios/.../Resources/
+```
+
+See `ml/wire-visual-intelligence/README.md` for Create ML (macOS) and class definitions.
 
 ## Server quick start
 
