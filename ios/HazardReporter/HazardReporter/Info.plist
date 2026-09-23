@@ -23,11 +23,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Hazard Reporter needs the camera to photograph hanging wires, potholes, and other public hazards.</string>
+	<string>Hazard Reporter uses the camera so Visual Intelligence can identify hanging wires, potholes, and other public hazards.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location determines which town, utility, or state outside-plant authority should be notified.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose an existing photo of a public hazard to upload with your report.</string>
+	<string>Choose an existing photo of a public hazard for Visual Intelligence to identify and upload.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

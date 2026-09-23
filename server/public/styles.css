@@ -202,6 +202,36 @@ h2 {
 
 .report-row:first-child { border-top: 0; padding-top: 0; }
 
+.vision-banner {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(15, 107, 76, 0.1);
+  border: 1px solid rgba(15, 107, 76, 0.18);
+  animation: rise 0.45s ease both;
+}
+
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.check-field input {
+  width: auto;
+}
+
+.check-field span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.95rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
 @keyframes rise {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }

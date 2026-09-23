@@ -38,6 +38,17 @@ export interface RoutedAuthority {
   reason: string;
 }
 
+export interface VisionSnapshot {
+  label: string;
+  confidence: number;
+  source: string;
+  detail: string;
+  reportable: boolean;
+  title?: string;
+  cues?: string[];
+  scores?: Array<{ label: string; confidence: number }>;
+}
+
 export interface ReportRecord {
   id: string;
   hazard_type: HazardType;
@@ -50,4 +61,8 @@ export interface ReportRecord {
   state: string | null;
   status: string;
   created_at: string;
+  vision_label: string | null;
+  vision_confidence: number | null;
+  vision_source: string | null;
+  vision_detail: string | null;
 }

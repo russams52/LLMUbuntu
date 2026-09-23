@@ -15,14 +15,30 @@
     <header class="brand-block">
       <p class="brand">Hazard Reporter</p>
       <h1>Report a public hazard</h1>
-      <p class="lede">Photograph a hanging wire, pothole, or other danger. We route it to the right town, utility, or state outside-plant desk.</p>
+      <p class="lede">Photograph a hanging wire, pothole, or other danger. Visual Intelligence identifies the issue; GPS routes it to the right town, utility, or state outside-plant desk.</p>
     </header>
 
     <section class="composer" aria-label="New report">
       <form id="report-form">
+        <label class="field photo-field">
+          <span>Photo</span>
+          <input id="photo" name="photo" type="file" accept="image/*" capture="environment" />
+        </label>
+
+        <div id="vision-banner" class="vision-banner" hidden></div>
+
+        <div class="actions">
+          <button type="button" id="classify-btn" class="secondary">Identify with Visual Intelligence</button>
+        </div>
+
+        <label class="field check-field">
+          <input id="autoDetect" type="checkbox" checked />
+          <span>Auto-detect hazard type from the photo</span>
+        </label>
+
         <label class="field">
           <span>Hazard type</span>
-          <select id="hazardType" name="hazardType" required>
+          <select id="hazardType" name="hazardType">
             <option value="wire">Hanging / damaged wire</option>
             <option value="pothole">Pothole</option>
             <option value="road_issue">Other road issue</option>
@@ -51,11 +67,6 @@
           <button type="button" data-lat="40.92" data-lng="-72.85">Brookhaven, LI</button>
           <button type="button" data-lat="34.0522" data-lng="-118.2437">Los Angeles, CA</button>
         </div>
-
-        <label class="field photo-field">
-          <span>Photo</span>
-          <input id="photo" name="photo" type="file" accept="image/*" capture="environment" />
-        </label>
 
         <div class="actions">
           <button type="button" id="preview-btn" class="secondary">Preview routing</button>

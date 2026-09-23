@@ -9,6 +9,7 @@ import {
   authoritiesRouter,
   reportsRouter,
   routingRouter,
+  visionRouter,
 } from "./routes/reports";
 
 migrate();
@@ -34,6 +35,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/reports", reportsRouter);
+app.use("/api/vision", visionRouter);
 app.use("/api/routing", routingRouter);
 app.use("/api/authorities", authoritiesRouter);
 
