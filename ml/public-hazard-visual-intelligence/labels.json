@@ -1,0 +1,59 @@
+{
+  "task": "public_hazard_recognition",
+  "description": "On-device and server Visual Intelligence labels for Hazard Reporter (wires, potholes, road damage, debris).",
+  "classes": [
+    {
+      "id": "hanging_wire",
+      "title": "Hanging / damaged wire",
+      "hazardType": "wire",
+      "reportable": true,
+      "cues": [
+        "Visible sag or loop between poles",
+        "Wire hanging below normal clearance",
+        "Detached span or dangling end",
+        "Wire resting on ground, fence, or vegetation"
+      ]
+    },
+    {
+      "id": "pothole",
+      "title": "Pothole",
+      "hazardType": "pothole",
+      "reportable": true,
+      "cues": [
+        "Circular or irregular cavity in asphalt",
+        "Broken pavement crater in travel lane"
+      ]
+    },
+    {
+      "id": "road_damage",
+      "title": "Road damage",
+      "hazardType": "road_issue",
+      "reportable": true,
+      "cues": [
+        "Cracked or heaved pavement",
+        "Missing asphalt without a deep cavity"
+      ]
+    },
+    {
+      "id": "debris_obstacle",
+      "title": "Debris / obstacle",
+      "hazardType": "other",
+      "reportable": true,
+      "cues": [
+        "Object blocking road or sidewalk",
+        "Fallen branch, trash, or rubble hazard"
+      ]
+    },
+    {
+      "id": "safe_scene",
+      "title": "No reportable hazard",
+      "hazardType": null,
+      "reportable": false,
+      "cues": [
+        "Normal outdoor street or sidewalk",
+        "No visible public safety hazard"
+      ]
+    }
+  ],
+  "confidenceThreshold": 0.42
+}

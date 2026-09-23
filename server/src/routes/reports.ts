@@ -5,6 +5,11 @@ import fs from "fs";
 import { randomUUID } from "crypto";
 import { createReport, getReport, listReports } from "../services/reports";
 import { resolveGeoContext, routeAuthorities } from "../services/routing";
+import {
+  classifyHazardImage,
+  isVisionLabel,
+  type VisionLabel,
+} from "../services/vision";
 import type { HazardType } from "../types";
 import { db } from "../db";
 
@@ -31,7 +36,27 @@ const upload = multer({
   },
 });
 
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.mimetype.startsWith("image/")) {
+      cb(new Error("Only image uploads are allowed"));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
 const HAZARD_TYPES: HazardType[] = ["wire", "pothole", "road_issue", "other"];
+
+function parseBool(value: unknown, defaultValue: boolean): boolean {
+  if (value === undefined || value === null || value === "") return defaultValue;
+  const s = String(value).toLowerCase();
+  if (["1", "true", "yes", "on"].includes(s)) return true;
+  if (["0", "false", "no", "off"].includes(s)) return false;
+  return defaultValue;
+}
 
 export const reportsRouter = Router();
 
@@ -50,14 +75,22 @@ reportsRouter.get("/:id", (req, res) => {
 
 reportsRouter.post("/", upload.single("photo"), async (req, res) => {
   try {
-    const hazardType = String(req.body.hazardType || "") as HazardType;
     const latitude = Number(req.body.latitude);
     const longitude = Number(req.body.longitude);
     const description = req.body.description ? String(req.body.description) : undefined;
+    const autoDetect = parseBool(req.body.autoDetect, true);
+    const rawHazard = req.body.hazardType ? String(req.body.hazardType) : undefined;
+    const hazardType = rawHazard as HazardType | undefined;
 
-    if (!HAZARD_TYPES.includes(hazardType)) {
+    if (hazardType && !HAZARD_TYPES.includes(hazardType)) {
       res.status(400).json({
         error: `hazardType must be one of: ${HAZARD_TYPES.join(", ")}`,
+      });
+      return;
+    }
+    if (!autoDetect && !hazardType) {
+      res.status(400).json({
+        error: "hazardType is required when autoDetect is false",
       });
       return;
     }
@@ -72,12 +105,29 @@ reportsRouter.post("/", upload.single("photo"), async (req, res) => {
       return;
     }
 
+    const clientVisionLabel = req.body.visionLabel
+      ? String(req.body.visionLabel)
+      : undefined;
+    const clientVisionConfidence = req.body.visionConfidence
+      ? Number(req.body.visionConfidence)
+      : undefined;
+
+    if (clientVisionLabel && !isVisionLabel(clientVisionLabel)) {
+      res.status(400).json({ error: "Invalid visionLabel" });
+      return;
+    }
+
     const result = await createReport({
       hazardType,
       description,
       latitude,
       longitude,
       photoPath: req.file?.filename ?? null,
+      autoDetect,
+      clientVisionLabel: clientVisionLabel as VisionLabel | undefined,
+      clientVisionConfidence: Number.isFinite(clientVisionConfidence)
+        ? clientVisionConfidence
+        : undefined,
     });
 
     res.status(201).json({
@@ -95,6 +145,19 @@ reportsRouter.post("/", upload.single("photo"), async (req, res) => {
       photoUrl: result.report.photo_path
         ? `/uploads/${result.report.photo_path}`
         : null,
+      vision: result.vision
+        ? {
+            label: result.vision.label,
+            title: result.vision.title,
+            detail: result.vision.detail,
+            confidence: result.vision.confidence,
+            reportable: result.vision.reportable,
+            hazardType: result.vision.hazardType,
+            source: result.vision.source,
+            cues: result.vision.cues,
+            scores: result.vision.scores,
+          }
+        : null,
       authorities: result.authorities.map((a) => ({
         id: a.authority.id,
         name: a.authority.name,
@@ -108,6 +171,54 @@ reportsRouter.post("/", upload.single("photo"), async (req, res) => {
       })),
       notifications: result.notifications,
     });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: message });
+  }
+});
+
+export const visionRouter = Router();
+
+visionRouter.post("/classify", memoryUpload.single("photo"), async (req, res) => {
+  try {
+    const description = req.body.description ? String(req.body.description) : undefined;
+    const backend =
+      req.body.backend === "clip" || req.body.backend === "heuristic"
+        ? req.body.backend
+        : undefined;
+    const clientVisionLabel = req.body.visionLabel
+      ? String(req.body.visionLabel)
+      : undefined;
+    const clientVisionConfidence = req.body.visionConfidence
+      ? Number(req.body.visionConfidence)
+      : undefined;
+
+    if (!req.file && !description && !clientVisionLabel) {
+      res.status(400).json({
+        error: "Provide a photo, description, or on-device visionLabel",
+      });
+      return;
+    }
+    if (clientVisionLabel && !isVisionLabel(clientVisionLabel)) {
+      res.status(400).json({ error: "Invalid visionLabel" });
+      return;
+    }
+
+    const vision = await classifyHazardImage(req.file?.buffer ?? null, {
+      description,
+      backend,
+      clientPrediction:
+        clientVisionLabel && isVisionLabel(clientVisionLabel)
+          ? {
+              label: clientVisionLabel as VisionLabel,
+              confidence: Number.isFinite(clientVisionConfidence)
+                ? (clientVisionConfidence as number)
+                : 0.7,
+            }
+          : undefined,
+    });
+
+    res.json({ vision });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(500).json({ error: message });

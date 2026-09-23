@@ -1,16 +1,17 @@
 # Hazard Reporter
 
-iOS app + centralized API for reporting public hazards (hanging wires, potholes, and other dangers) across the United States. Latitude/longitude determine which authority is notified.
+iOS app + centralized API for reporting public hazards (hanging wires, potholes, and other dangers) across the United States. **Visual Intelligence** identifies the issue from the photo; latitude/longitude determine which authority is notified.
 
 ## What it does
 
 1. Capture a photo and GPS location (iOS app or web demo).
-2. Upload to the centralized server with a hazard type.
-3. Server resolves locality and routes the report:
+2. **Visual Intelligence** classifies the scene (hanging wire, pothole, road damage, debris, or safe).
+3. Upload to the centralized server with the detected (or manually chosen) hazard type.
+4. Server resolves locality and routes the report:
    - **Hanging wires on Long Island** → Verizon, Altice, and Cablevision outside-plant desks **plus** the NY State Outside Plant Authority.
    - **Wires elsewhere** → state outside-plant authority (NY when known) or US OSP placeholder + regional utility placeholder.
    - **Potholes / road issues** → the town that contains the coordinates (LI towns seeded); otherwise county or US town placeholder.
-4. Stores the report and **emails** configured contacts when `EMAIL_ENABLED=true` (otherwise queues contact details for outreach).
+5. Stores the report and **emails** configured contacts when `EMAIL_ENABLED=true` (otherwise queues contact details for outreach).
 
 Authority coverage is **US-wide in the API**, with **Long Island / New York seeded contacts** and placeholders elsewhere.
 
@@ -18,8 +19,39 @@ Authority coverage is **US-wide in the API**, with **Long Island / New York seed
 
 | Path | Purpose |
 |------|---------|
-| `server/` | Node.js + TypeScript API, SQLite, routing engine, demo web UI |
-| `ios/HazardReporter/` | SwiftUI iOS client (camera, location, multipart upload) |
+| `server/` | Node.js + TypeScript API, SQLite, routing engine, Visual Intelligence, demo web UI |
+| `ios/HazardReporter/` | SwiftUI iOS client (camera, location, on-device + server VI, multipart upload) |
+| `ml/public-hazard-visual-intelligence/` | Train Core ML for multi-class public hazard recognition |
+
+## Visual Intelligence
+
+### Server
+
+`POST /api/vision/classify` (multipart `photo`, optional `description`) returns a label, confidence, and suggested `hazardType`.
+
+Backends:
+
+- `VISION_BACKEND=heuristic` (default) — offline CV features via `sharp` (fast, testable).
+- `VISION_BACKEND=clip` — Xenova CLIP zero-shot image classification.
+
+Report create (`POST /api/reports`) runs auto-detect by default (`autoDetect=true`) and can accept on-device `visionLabel` / `visionConfidence` from iOS.
+
+### iOS
+
+1. Prefer bundled `PublicHazardClassifier.mlpackage` (Core ML + Vision).
+2. Else map Apple Vision taxonomy labels to hazard classes.
+3. Else call the server classify API.
+
+Suggested hazard type is applied automatically when confidence clears the threshold.
+
+Retrain Core ML:
+
+```bash
+cd ml/public-hazard-visual-intelligence
+python3 scripts/generate_synthetic_dataset.py
+python3 scripts/train_coreml.py
+# copy models/PublicHazardClassifier.mlpackage → ios/.../Resources/
+```
 
 ## Server quick start
 
@@ -33,7 +65,8 @@ npm run dev
 
 - API health: `http://localhost:3000/health`
 - Demo UI: `http://localhost:3000/demo/`
-- Create report: `POST /api/reports` (multipart: `photo`, `hazardType`, `latitude`, `longitude`, `description`)
+- Classify: `POST /api/vision/classify`
+- Create report: `POST /api/reports` (multipart: `photo`, optional `hazardType`, `latitude`, `longitude`, `description`, `autoDetect`)
 - Preview routing: `GET /api/routing/preview?hazardType=wire&latitude=40.7062&longitude=-73.6187`
 
 ```bash

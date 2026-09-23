@@ -9,3 +9,7 @@ DerivedData/
 xcuserdata/
 *.xcodeproj/
 *.xcworkspace/
+ml/**/data/
+ml/**/models/*.pt
+__pycache__/
+.venv/

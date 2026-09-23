@@ -42,7 +42,11 @@ export function migrate(): void {
       county TEXT,
       state TEXT,
       status TEXT NOT NULL DEFAULT 'received',
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      vision_label TEXT,
+      vision_confidence REAL,
+      vision_source TEXT,
+      vision_detail TEXT
     );
 
     CREATE TABLE IF NOT EXISTS report_authorities (
@@ -56,4 +60,19 @@ export function migrate(): void {
       FOREIGN KEY (authority_id) REFERENCES authorities(id)
     );
   `);
+
+  // Additive migrations for databases created before Visual Intelligence columns.
+  const reportColumns = db
+    .prepare("PRAGMA table_info(reports)")
+    .all() as Array<{ name: string }>;
+  const names = new Set(reportColumns.map((c) => c.name));
+  const addColumn = (name: string, ddl: string) => {
+    if (!names.has(name)) {
+      db.exec(`ALTER TABLE reports ADD COLUMN ${ddl}`);
+    }
+  };
+  addColumn("vision_label", "vision_label TEXT");
+  addColumn("vision_confidence", "vision_confidence REAL");
+  addColumn("vision_source", "vision_source TEXT");
+  addColumn("vision_detail", "vision_detail TEXT");
 }
